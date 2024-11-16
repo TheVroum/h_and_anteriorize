@@ -5,7 +5,7 @@
 	"minAppVersion": "0.15.0",
 	"description": "Hash a note or a folder with sha3 and git partially compatible procedure with sha1. Get EIP-681 + EIP-55 enabled URL to easily put the digest in ethereum blockchain.",
 	"author": "Jean Oustry",
-	"authorUrl": "https://github.com/TheVroum/h_and_anteriorize",
+	"authorUrl": "https://github.com/TheVroum",
 	"fundingUrl": "",
 	"isDesktopOnly": false
 }
