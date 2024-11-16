@@ -76,11 +76,9 @@ export default class HAAPlugin extends Plugin {
 
     async produceFilteredZip(folder: TFolder, recapFilePath: TFile | null) {
         if (!this.settings.createZipArchive) {
-            console.log("zip creation disabled in settings");
             return;
         }
         if (!recapFilePath) {
-            console.log("no recap file path");
             return;
         }
 
