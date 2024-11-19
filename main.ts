@@ -1,4 +1,3 @@
-// ascii qr code
 // Jean Oustry - Made using https://github.com/obsidianmd/obsidian-sample-plugin template
 import {
     App,
