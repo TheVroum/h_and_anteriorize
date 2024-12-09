@@ -13,9 +13,6 @@ import {
 
 import { sha3_512 } from 'js-sha3'
 
-import { Zip } from 'zip-lib';
-
-
 enum UriType {
     None = "none",
     Address = "address",
@@ -26,7 +23,6 @@ enum UriType {
 
 interface HAASettings {
     recapFolder: string;
-    zipFolder: string;
     putFileContentInRecap: boolean;
     putConcatenatedFolderContentInRecap: boolean;
     createZipArchive: boolean;
@@ -41,7 +37,6 @@ interface HAASettings {
 // The settings of the plugin.
 const DEFAULT_SETTINGS: HAASettings = {
     recapFolder: "h_and_anteriorize_recaps",
-    zipFolder: "h_and_anteriorize_zips",
     putFileContentInRecap: true,
     putConcatenatedFolderContentInRecap: true,
     createZipArchive: true,
@@ -71,68 +66,6 @@ export default class HAAPlugin extends Plugin {
         }
         children.forEach((c, i) => children[i] = `\t${c.replace(/\n/g, "\n\t")}`);
         return children.join("\n\n---\n");
-    }
-
-    async produceFilteredZip(folder: TFolder, recapFilePath: TFile | null) {
-        if (!this.settings.createZipArchive) {
-            return;
-        }
-        if (!recapFilePath) {
-            return;
-        }
-
-        //@ts-ignore
-        const basePath: string = this.app.vault.adapter.basePath;
-        const children: Array<string> = [];
-        Vault.recurseChildren(folder, (f: TFile | TFolder) => {
-            if (f instanceof TFile && ((!this.settings.includeJustMdFiles) || f.extension === "md")) {
-                children.push(f.path);
-            }
-        });
-        const pathList = children.join("\n");
-        const pathListPath = `${this.settings.zipFolder}/${folder.name}${this.settings.pathListSuffix}`;
-        let pathFileNonce = -1;
-        let newPathListPath = pathListPath;
-        let pathListFile = this.app.vault.getAbstractFileByPath(newPathListPath);
-        while (pathListFile) {
-            pathFileNonce++;
-            newPathListPath = `${this.settings.zipFolder}/${folder.name}_${pathFileNonce}${this.settings.pathListSuffix}`;
-            pathListFile = this.app.vault.getAbstractFileByPath(newPathListPath);
-        }
-        pathListFile = await this.app.vault.create(newPathListPath, pathList);
-        const zip = new Zip();
-        children.forEach(path => zip.addFile(`${basePath}/${path}`, path));
-        if (this.settings.addRecapToZip) {
-            zip.addFile(`${basePath}/${recapFilePath.path}`, this.settings.zipRecapName);
-        }
-        zip.addFile(`${basePath}/${pathListFile.path}`, `${folder.name}${this.settings.pathListSuffix}`);
-        let nonce = -1;
-        let zipPath = `${this.settings.zipFolder}/${folder.name}.zip`;
-        let zipFile = this.app.vault.getAbstractFileByPath(zipPath);
-        while (zipFile) {
-            nonce++;
-            zipPath = `${this.settings.zipFolder}/${folder.name}_${nonce}.zip`;
-            zipFile = this.app.vault.getAbstractFileByPath(zipPath);
-        }
-        await zip.archive(`${basePath}/${zipPath}`);
-        await this.app.vault.delete(pathListFile);
-    }
-
-    async getFlattenedTree(folder: TFolder) {
-        const children: Array<string | Array<string | Promise<string>>> = [];
-        Vault.recurseChildren(folder, async (f: TFile | TFolder) => {
-            if (f instanceof TFile && ((!this.settings.includeJustMdFiles) || f.extension === "md")) {
-                children.push([f.path, this.getFileHash(f)]);
-            }
-            else {
-                children.push(`${f.path} => folder`);
-            }
-        });
-        for (let i = 0; i < children.length; i++) {
-            if(children[i] instanceof Array)
-            children[i] = (`${children[i][0] as string} => ${await (children[i][1] as Promise<string>)}`);
-        }
-        return (children as Array<string>).join("\n");
     }
 
     hexToDigit(finalHash: string) {
@@ -175,18 +108,6 @@ export default class HAAPlugin extends Plugin {
         return recap.join("\n\n---\n");
     }
     
-    async folderRecapFactory(finalHash: string, targetFolder: TFolder) {
-        const recap = [];
-        recap.push(this.tableFactory(finalHash));
-        recap.push(finalHash);
-        const treeWithHashes: string = await this.getFlattenedTree(targetFolder);
-        recap.push(treeWithHashes);
-        if (this.settings.putConcatenatedFolderContentInRecap) {
-            recap.push(await this.getIndentedConcatenatedFolderContent(targetFolder));
-        }
-        return recap.join("\n\n---\n");
-    }
-
     async onload() {
         await this.loadSettings();
         this.addSettingTab(new SettingsTab(this.app, this));
@@ -199,8 +120,8 @@ export default class HAAPlugin extends Plugin {
                         if (file instanceof TFile) {
                             const finalHash = await this.getFileHash(file);
                             const recap = await this.fileRecapFactory(finalHash, file);
-                            let recapFolder = this.app.vault.getAbstractFileByPath(this.settings.recapFolder) as TFolder;
-                            recapFolder = recapFolder ?? await this.app.vault.createFolder(this.settings.recapFolder);
+                            let recapFolder = (this.app.vault.getAbstractFileByPath(this.settings.recapFolder)
+                            ?? await this.app.vault.createFolder(this.settings.recapFolder));
                             const filePath = [recapFolder.path, `${file.name}.recap.md`].join("/");
                             let recapFile = this.app.vault.getAbstractFileByPath(filePath);
                             let nonce = -1;
@@ -218,27 +139,7 @@ export default class HAAPlugin extends Plugin {
                             new Notice(`Recap file created : ${recapFile.path}`);
                         }
                         else if (file instanceof TFolder) {
-                            const finalHash = await this.getHashedFlattenedTree(file);
-                            const recap = await this.folderRecapFactory(finalHash, file);
-                            let recapFolder = this.app.vault.getAbstractFileByPath(this.settings.recapFolder) as TFolder;
-                            recapFolder = recapFolder ?? await this.app.vault.createFolder(this.settings.recapFolder);
-                            const filePath = [recapFolder.path, `${file.name}.recap.md`].join("/");
-                            let recapFile = this.app.vault.getAbstractFileByPath(filePath);
-                            let nonce = -1;
-                            while (recapFile) {
-                                nonce++;
-                                const newFilePath = [recapFolder.path, `${file.name}_${nonce}.recap.md`].join("/");
-                                const newRecapFile = this.app.vault.getAbstractFileByPath(newFilePath);
-                                if (!newRecapFile) {
-                                    const recapFile = await this.app.vault.create(newFilePath, recap);
-                                    await this.produceFilteredZip(file, recapFile);
-                                    new Notice(`Recap file created : ${recapFile.path}`);
-                                    return;
-                                }
-                            }
-                            recapFile = await this.app.vault.create(filePath, recap);
-                            await this.produceFilteredZip(file, (recapFile as TFile | null));
-                            new Notice(`Recap file created : ${recapFile.path}`);
+                            new Notice(`Please select a single file.`);
                         }
                         else {
                             new Notice("Please select a file or a folder");
@@ -260,10 +161,6 @@ export default class HAAPlugin extends Plugin {
         return sha3_512(await this.app.vault.read(file));
     }
 
-    async getHashedFlattenedTree(folder: TFolder) {
-        return sha3_512(await this.getFlattenedTree(folder));
-    }
-
     onunload() { }
 }
 
@@ -282,7 +179,7 @@ class SettingsTab extends PluginSettingTab {
 
         containerEl.createEl('h2', { text: 'Hash& anteriorize ready to work!' });
 
-        containerEl.createEl("b", { text: "You're up to go! Just right click on the element (folder or file) you want to hash and click \"press Hash and anteriorize\""});
+        containerEl.createEl("b", { text: "You're up to go! Just right click on the element (file) you want to hash and click \"press Hash and anteriorize\""});
 
         containerEl.createEl("div",
             { text: "Only .md files are considered.\
@@ -291,7 +188,6 @@ class SettingsTab extends PluginSettingTab {
 
         containerEl.createEl("div",
             { text: `Hash reproduction process :
-            For files, just hash the content, not the filename, path, or anything else.
-            For folders, hash the flattened tree of the folder, where each line is in the form "path/to/dir => folder" or "path/to/file => 0xfilehash", without trailing line, with the sha3_512 function.`});
+            For a file, just hash the content, not the filename, path, or anything else.`});
         }
 }
