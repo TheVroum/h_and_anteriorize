@@ -1,7 +1,7 @@
 {
 	"id": "h-and-anteriorize",
 	"name": "h& anteriorize",
-	"version": "1.0.0",
+	"version": "2.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Hash a note or a folder with sha3 and git partially compatible procedure with sha1. Get EIP-681 + EIP-55 enabled URL to easily put the digest in ethereum blockchain.",
 	"author": "Jean Oustry",
