@@ -110,7 +110,6 @@ export default class HAAPlugin extends Plugin {
     
     async onload() {
         await this.loadSettings();
-        this.addSettingTab(new SettingsTab(this.app, this));
         this.registerEvent(this.app.workspace.on('file-menu', (menu: Menu, file: TFile | TFolder) => {
             menu.addItem((item: MenuItem) => {
                 item
