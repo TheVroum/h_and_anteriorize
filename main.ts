@@ -121,6 +121,11 @@ export default class HAAPlugin extends Plugin {
                         if (file instanceof TFile) {
                             const finalHash = await this.getFileHash(file);
                             const recap = await this.fileRecapFactory(finalHash, file);
+                            if (!(this.app.vault.getAbstractFileByPath(this.settings.recapFolder) instanceof TFolder))
+                            {
+                                new Notice(`Error : ${this.settings.recapFolder} is not a folder.`);
+                                throw new Error(`Error : ${this.settings.recapFolder} is not a folder.`);
+                            }
                             let recapFolder = (this.app.vault.getAbstractFileByPath(this.settings.recapFolder)
                             ?? await this.app.vault.createFolder(this.settings.recapFolder));
                             const filePath = [recapFolder.path, `${file.name}.recap.md`].join("/");
@@ -129,6 +134,11 @@ export default class HAAPlugin extends Plugin {
                             while (recapFile) {
                                 nonce++;
                                 const newFilePath = [recapFolder.path, `${file.name}_${nonce}.recap.md`].join("/");
+                                if (!(this.app.vault.getAbstractFileByPath(newFilePath) instanceof TFile))
+                                {
+                                    new Notice(`Error : ${newFilePath} is not a file.`);
+                                    throw new Error(`Error : ${newFilePath} is not a file.`);
+                                }
                                 const newRecapFile = this.app.vault.getAbstractFileByPath(newFilePath);
                                 if (!newRecapFile) {
                                     const recapFile = await this.app.vault.create(newFilePath, recap);
