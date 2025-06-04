@@ -176,30 +176,3 @@ export default class HAAPlugin extends Plugin {
     onunload() { }
 }
 
-class SettingsTab extends PluginSettingTab {
-    plugin: HAAPlugin;
-
-    constructor(app: App, plugin: HAAPlugin) {
-        super(app, plugin);
-        this.plugin = plugin;
-    }
-
-    display(): void {
-        const { containerEl } = this;
-
-        containerEl.empty();
-
-        containerEl.createEl('h2', { text: 'Hash& anteriorize ready to work!' });
-
-        containerEl.createEl("b", { text: "You're up to go! Just right click on the element (file) you want to hash and click \"press Hash and anteriorize\""});
-
-        containerEl.createEl("div",
-            { text: "Only .md files are considered.\
-            The recap file created contains the URIs and everything required to reproduce the hash.\
-            The recap file and the zip file are created in the root of the vault."});
-
-        containerEl.createEl("div",
-            { text: `Hash reproduction process :
-            For a file, just hash the content, not the filename, path, or anything else.`});
-        }
-}
