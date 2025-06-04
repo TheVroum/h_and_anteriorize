@@ -109,12 +109,11 @@ export default class HAAPlugin extends Plugin {
     }
     
     async onload() {
-        this.registerEvent(async ()=> {
-            await this.loadSettings();
-            this.addSettingTab(new SettingsTab(this.app, this));
-            this.app.workspace.on('file-menu', (menu: Menu, file: TFile | TFolder) => {
-                menu.addItem((item: MenuItem) => {
-                    item
+        await this.loadSettings();
+        this.addSettingTab(new SettingsTab(this.app, this));
+        this.app.workspace.on('file-menu', (menu: Menu, file: TFile | TFolder) => {
+            menu.addItem((item: MenuItem) => {
+                item
                     .setTitle('Hash and anteriorize')
                     .setIcon('hash')
                     .onClick(async (_evt: MouseEvent) => {
@@ -156,7 +155,6 @@ export default class HAAPlugin extends Plugin {
                             new Notice("Please select a file or a folder");
                         }
                     });
-                });
             });
         });
     }
