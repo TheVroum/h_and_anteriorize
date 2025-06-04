@@ -119,7 +119,7 @@ export default class HAAPlugin extends Plugin {
                         if (file instanceof TFile) {
                             const finalHash = await this.getFileHash(file);
                             const recap = await this.fileRecapFactory(finalHash, file);
-                            if (!(this.app.vault.getAbstractFileByPath(this.settings.recapFolder) instanceof TFolder))
+                            if (this.app.vault.getAbstractFileByPath(this.settings.recapFolder) instanceof TFile)
                             {
                                 new Notice(`Error : ${this.settings.recapFolder} is not a folder.`);
                                 throw new Error(`Error : ${this.settings.recapFolder} is not a folder.`);
