@@ -111,7 +111,7 @@ export default class HAAPlugin extends Plugin {
     async onload() {
         await this.loadSettings();
         this.addSettingTab(new SettingsTab(this.app, this));
-        this.app.workspace.on('file-menu', (menu: Menu, file: TFile | TFolder) => {
+        this.registerEvent(this.app.workspace.on('file-menu', (menu: Menu, file: TFile | TFolder) => {
             menu.addItem((item: MenuItem) => {
                 item
                     .setTitle('Hash and anteriorize')
@@ -156,7 +156,7 @@ export default class HAAPlugin extends Plugin {
                         }
                     });
             });
-        });
+        }));
     }
 
     async loadSettings() {
@@ -171,6 +171,8 @@ export default class HAAPlugin extends Plugin {
         return sha3_512(await this.app.vault.read(file));
     }
 
-    onunload() { }
+    onunload() {
+
+    }
 }
 
